@@ -7,25 +7,42 @@
 
   var canvas = document.getElementById('map');
   var context = canvas.getContext('2d');
-  context.fillStyle = '#FF0000';
 
   moveAnt = function(Ant){
-    Ant.locationX += Math.round(Math.random() * 2) - 1;
-    Ant.locationY += Math.round(Math.random() * 2) - 1;
-    if(Ant.locationY >= 100){
-      Ant.locationY = 99;
+    if(Ant.returningHome){
+
+    } else {
+      
     }
-    if(Ant.locationX >= 100){
-      Ant.locationX = 99;
+    var xDir = Ant.forwardLocation.x === 0 ? 2 : Ant.forwardLocation.x;
+    var yDir = Ant.forwardLocation.y === 0 ? 2 : Ant.forwardLocation.y;
+    Ant.forwardLocation.x = xDir === 2 ? Math.round(Math.random() * xDir) - 1 : Math.round(Math.random() * xDir);
+    Ant.forwardLocation.y = yDir === 2 ? Math.round(Math.random() * yDir) - 1 : Math.round(Math.random() * yDir);
+    var tempMoveX = Ant.locationX + Ant.forwardLocation.x;
+    var tempMoveY = Ant.locationY + Ant.forwardLocation.y;    
+    var tempMap = map[tempMoveX][tempMoveY];
+    if(tempMap.blockType === "food" && tempMap.density > 0){
+
+    } else {
+      Ant.locationX += Ant.forwardLocation.x;
+      Ant.locationY += Ant.forwardLocation.y;
     }
-    if(Ant.locationX < 0){
-      Ant.locationX = 0;
+    if(Ant.locationY >= 99){
+      Ant.locationY = 98;
     }
-    if(Ant.locationY < 0){
-      Ant.locationY = 0;
+    if(Ant.locationX >= 99){
+      Ant.locationX = 98;
+    }
+    if(Ant.locationX < 1){
+      Ant.locationX = 1;
+    }
+    if(Ant.locationY < 1){
+      Ant.locationY = 1;
     }
 
+
     map[Ant.locationX][Ant.locationY].antPresent = true;
+    map[Ant.locationX][Ant.locationY].pheromeLevel += 1;
     return Ant;
   }
   antLibrary.getAllAnts = function(){
@@ -43,6 +60,12 @@
   }
 
   antLibrary.clearCanvas = function(){
+    map.map(function(yArray){
+      return yArray.map(function(coord){
+        coord.antPresent = false;
+        return coord;
+      })
+    })
     context.clearRect(0, 0, canvas.width, canvas.height)
   }
 
@@ -52,7 +75,7 @@
       var one = [];
       for(var width = 0; width < dimension; width++){
         var spaceAndDensity = getSpaceAndDensity();
-        one.push({x:height, y:width, material:spaceAndDensity.blockType, density:spaceAndDensity.density, antPresent:false})
+        one.push({x:height, y:width, material:spaceAndDensity.blockType, density:spaceAndDensity.density, antPresent:false, pheromeLevel:0})
       }
       map.push(one)
     }  
@@ -74,14 +97,28 @@
 
   var Ant = function (type) {
     this.type = type || 'forager';
-    this.locationX = 0;
-    this.locationY = 0;
+    this.locationX = 50;
+    this.locationY = 50;
+    this.forwardLocation={x:0,y:0}
   };
 
   antLibrary.showPositions = function(){
     map.forEach(function(xRow){
       xRow.forEach(function(coord){
-        if (coord.antPresent){
+        if(coord.antPresent){
+          context.fillStyle = '#FF0000';
+          context.beginPath();
+          context.arc(coord.x*10, coord.y*10, 1, 0, Math.PI * 2, true);
+          context.fill();
+        }        
+        if(coord.pheromeLevel > 0){
+          context.fillStyle = 'rgba(146, 59, 146,'+coord.pheromeLevel/10+')';
+          context.beginPath();
+          context.arc(coord.x*10, coord.y*10, 1, 0, Math.PI * 2, true);
+          context.fill();
+        }
+        if(coord.material === 'food'){          
+          context.fillStyle = '#3E823A';
           context.beginPath();
           context.arc(coord.x*10, coord.y*10, 1, 0, Math.PI * 2, true);
           context.fill();
@@ -112,4 +149,8 @@ makeOneMoveAndDisplay = function(){
   antLibrary.makeSomeMoves();
   antLibrary.showPositions();
 }
-// window.setInterval(makeOneMoveAndDisplay, 300)
+
+runSimulation = function(numberOfAnts, refreshRate){
+  createtonsoAnts(numberOfAnts || 10)
+  window.setInterval(makeOneMoveAndDisplay, refreshRate || 300)
+}
